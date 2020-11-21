@@ -1,0 +1,46 @@
+## @file
+# Library function for the implementation of IITP ransomware project 2018-20.
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010006
+  BASE_NAME                      = DxePrototype
+  MODULE_UNI_FILE                = DxePrototype.uni
+  FILE_GUID                      = 62ae4f23-d0f2-43b0-809a-435e537b773d 
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+
+  ENTRY_POINT			         = DxePrototypeEntryPoint
+
+#
+#  VALID_ARCHITECTURES           = IA32 X64
+#
+#  DRIVER_BINDING                = gPrototypeDriverBinding
+#  COMPONENT_NAME                = gPrototypeComponentName
+#  COMPONENT_NAME2               = gPrototypeComponentName2
+#
+#
+
+[Sources]
+  ComponentName.c
+  Prototype.c
+  Prototype.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  MemoryAllocationLib
+  DevicePathLib
+  UefiLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  BaseMemoryLib
+  DebugLib
+  ReportStatusCodeLib
+
+[Protocols]
+  s 
+
