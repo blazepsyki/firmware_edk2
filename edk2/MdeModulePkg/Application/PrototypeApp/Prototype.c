@@ -37,19 +37,34 @@ UefiMain (
     UINT32      USB_Status;
     UINTN       HandleCount;
     UINTN       HandleIndex;
+
+    // URD Specification
+    UINT16      URD_IdVendor = 7531;
+    UINT16      URD_IdProduct = 260;
+    UINT8       URD_InterfaceClass = 255;
+    UINT8       URD_InterfaceSubClass = 0;
+    UINT8       URD_InterfaceProtocol = 0;
+        
     EFI_STATUS  Status;
     
     EFI_HANDLE  *HandleBuffer;
 
-    EFI_USB_IO_PROTOCOL *UsbProtocol;
-    //EFI_DEVICE_PATH     *DevicePath = NULL;
+    // USB Data Structures
+    EFI_USB_IO_PROTOCOL             *UsbProtocol;
+    EFI_USB_DEVICE_DESCRIPTOR       DeviceDesc;
+    //EFI_USB_CONFIG_DESCRIPTOR       ConfigDesc;
+    EFI_USB_INTERFACE_DESCRIPTOR    IntfDesc;
+    EFI_USB_ENDPOINT_DESCRIPTOR     EndpDesc;
+
+    
+    //UINT8   InEndpointAddr = 0;
+    UINT8   OutEndpointAddr = 0;
 
     CHAR8 Data[8] = "1234567\n";
     UINTN Data_len = 8;
 
 	Index = 0;
   
-
     Status = gBS->LocateHandleBuffer (
                 ByProtocol,
                 &gEfiUsbIoProtocolGuid,
@@ -57,40 +72,78 @@ UefiMain (
                 &HandleCount,
                 &HandleBuffer
             );
-    ASSERT_EFI_ERROR(Status);
+    //Print(L"USB Handle Count: %d\n", HandleCount);
 
-    for(HandleIndex=0;HandleIndex < HandleCount; HandleIndex++) {
+    for(HandleIndex=0; HandleIndex < HandleCount; HandleIndex++) {
+        Status = gBS->HandleProtocol (
+                    HandleBuffer[HandleIndex],
+                    &gEfiUsbIoProtocolGuid,
+                    (VOID **) &UsbProtocol
+                );
+        //Print(L"Open Protocol Status=%d\n", Status);
+              
+        Status = UsbProtocol->UsbGetDeviceDescriptor (
+                    UsbProtocol,
+                    &DeviceDesc
+                );
+        //Print(L"Status= %d\n", Status);
+        //Print(L"IdVendor=0x%04x, IdProduct=0x%04x\n", DeviceDesc.IdVendor, DeviceDesc.IdProduct);
+        if ((URD_IdVendor == DeviceDesc.IdVendor) && (URD_IdProduct == DeviceDesc.IdProduct)) {
+            /*Status = UsbProtocol->UsbGetConfigDescriptor (
+                        UsbProtocol,
+                        &ConfigDesc
+                    );
+            Print(L"NumInterfaces= %d\n", ConfigDesc.NumInterface);*/
+            Status = UsbProtocol->UsbGetInterfaceDescriptor (
+                        UsbProtocol,
+                        &IntfDesc
+                    );
+            if((IntfDesc.InterfaceClass == URD_InterfaceClass) && (IntfDesc.InterfaceSubClass == URD_InterfaceSubClass) && (IntfDesc.InterfaceProtocol == URD_InterfaceProtocol)) {
+                //Print(L"URD is detected.\n");
+                for(Index = 0; Index < IntfDesc.NumEndpoints; Index++) {
+                    Status = UsbProtocol->UsbGetEndpointDescriptor (
+                                UsbProtocol,
+                                Index,
+                                &EndpDesc
+                            );
+                   // if(EndpDesc.EndpointAddress > 127)
+                     //   InEndpointAddr = EndpDesc.EndpointAddress;
+                    if(EndpDesc.EndpointAddress < 128)
+                        OutEndpointAddr = EndpDesc.EndpointAddress;
+                }
+                
+                /*Status = UsbProtocol->UsbBulkTransfer (
+                            UsbProtocol,
+                            InEndpointAddr,
+                            Data,
+                            &Data_len,
+                            0,
+                            &USB_Status
+                        );
+                Print(L"Receive nonce value, Endpoint=%02x, Status=%d\n", InEndpointAddr, Status);*/
+                Status = UsbProtocol->UsbBulkTransfer (
+                            UsbProtocol,
+                            OutEndpointAddr,
+                            Data,
+                            &Data_len,
+                            0,
+                            &USB_Status
+                        );
+                Print(L"Send hash value, Endpoint=%02x, Status=%d\n", OutEndpointAddr, Status);
 
-        Status = gBS->LocateProtocol (
-                &gEfiUsbIoProtocolGuid,
-                NULL,
-                (VOID **)&UsbProtocol
-            );
+
+            }
+            else {
+                Print(L"URD is not detected. System will be shut down.\n");
+                // Shutdown Shell command
+
+            }
+        }
+        
+        
         ASSERT_EFI_ERROR(Status);
-        for(Index=0; Index<16; Index++) {
-            Status = UsbProtocol->UsbSyncInterruptTransfer (
-                UsbProtocol,
-                Index,
-                Data,
-                &Data_len,
-                0,
-                &USB_Status
-                );
-        //DEBUG((EFI_D_INFO, "USB bulk transfer =%d\n", Status));
-            Status = UsbProtocol->UsbSyncInterruptTransfer (
-                UsbProtocol,
-                Index+128,
-                Data,
-                &Data_len,
-                0,
-                &USB_Status
-                );
-        //DEBUG((EFI_D_INFO, "USB bulk transfer =%d\n", Status));
-        }     
-
+        
     }
-
-
   FreePool (HandleBuffer);  
   return EFI_SUCCESS;
 }
