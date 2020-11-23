@@ -21,4 +21,14 @@ DxePrototypeEntryPoint (
   IN EFI_SYSTEM_TABLE     *SystemTable
 );
 
+typedef struct {
+  UINT64 Signature;
 
+  EFI_USB_IO_PROTOCOL             *UsbIo;
+
+  EFI_USB_INTERFACE_DESCRIPTOR    InterfaceDescriptor;
+  EFI_USB_ENDPOINT_DESCRIPTOR     BulkInEndpointDescriptor;
+  EFI_USB_ENDPOINT_DESCRIPTOR     BulkOutEndpointDescriptor;
+  EFI_USB_ENDPOINT_DESCRIPTOR     InterruptEndpointDescriptor;
+
+} USB_URD_DEVICE;
