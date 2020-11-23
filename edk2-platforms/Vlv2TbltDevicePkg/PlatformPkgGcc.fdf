@@ -665,6 +665,11 @@ FILE FREEFORM = 878AC2CC-5343-46F2-B563-51F89DAF56BA {
 !endif
 
 #
+# UEFI URD Application
+#
+INF MdeModulePkg/Application/PrototypeApp/PrototypeApp.inf
+
+#
 # Network Modules
 #
 !if $(NETWORK_ENABLE) == TRUE

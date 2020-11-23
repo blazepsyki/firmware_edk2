@@ -1662,6 +1662,11 @@ MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteSmmDxe.inf
 
 !endif
 
+#
+# UEFI URD Application
+#
+MdeModulePkg/Application/PrototypeApp/PrototypeApp.inf
+
 [BuildOptions]
 #
 # Define Build Options both for EDK and EDKII drivers.
