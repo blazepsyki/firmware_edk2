@@ -63,10 +63,10 @@ UefiMain (
     EFI_USB_ENDPOINT_DESCRIPTOR     EndpDesc;
 
     // Data transfer 
-    //CHAR8 Nonce_Data[33] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
+    CHAR8 Nonce_Data[33] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
     CHAR8 Hash_Data[33] = "1A3E7942FC31AE45679B21DA967CE27\r\0";
     UINT8 Verify_Data = 127;
-    //UINTN Nonce_len = 32;
+    UINTN Nonce_len = 32;
     UINTN Hash_len = 33;
     UINTN VD_len = 1;
 
@@ -130,7 +130,7 @@ UefiMain (
                         OutEndpointAddr = EndpDesc.EndpointAddress;
                 }
                 
-                /*Status = UsbProtocol->UsbBulkTransfer (
+                Status = UsbProtocol->UsbBulkTransfer (
                             UsbProtocol,
                             InEndpointAddr,
                             Nonce_Data,
@@ -139,13 +139,13 @@ UefiMain (
                             &USB_Status
                         );
                 Print(L"Receive nonce value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
-                */
-                /*Print(L"Nonce length=%d\n", Nonce_len);
+                
+                Print(L"Nonce length=%d\n", Nonce_len);
                 Print(L"Nonce=");
                 for(Index=0;Index<Nonce_len;Index++) {
                     Print(L"%02x ", Nonce_Data[Index]);
                 }
-                Print(L"\n");*/
+                Print(L"\n");
                 
                 // Hash Computation
                 //gBS->Stall(10000);
