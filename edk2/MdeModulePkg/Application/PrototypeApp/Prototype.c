@@ -65,10 +65,10 @@ UefiMain (
     // Data transfer 
     CHAR8 Nonce_Data[33] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
     CHAR8 Hash_Data[33] = "1A3E7942FC31AE45679B21DA967CE270\n";
-    UINT8 Verify_Data = 0;
+    UINT8 Verify_Data = 127;
     UINTN Nonce_len = 32;
     UINTN Hash_len = 33;
-    UINTN VD_len = 0;
+    UINTN VD_len = 1;
 
     // Firmware read variables 
     //UINTN       AddrIdx;
@@ -90,7 +90,7 @@ UefiMain (
                 &HandleCount,
                 &HandleBuffer
             );
-    Print(L"Connected USB Device Count: %d\n", HandleCount);
+    Print(L"Connected USB Device: %d\n", HandleCount);
 
     for(HandleIndex=0; HandleIndex < HandleCount; HandleIndex++) {
         Status = gBS->HandleProtocol (
@@ -138,12 +138,15 @@ UefiMain (
                             0,
                             &USB_Status
                         );
-                Print(L"Receive nonce value, Endpoint=%02x, Status=%d\n", InEndpointAddr, Status);
+                Print(L"Receive nonce value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
+                
+                //Print(L"Nonce length=%d\n", Nonce_len);
+                Print(L"Nonce=");
                 for(Index=0;Index<Nonce_len;Index++) {
-                Print(L"%d = %x\n", Index, Nonce_Data[Index]);
+                    Print(L"%x ", Index, Nonce_Data[Index]);
                 }
-                Print(L"Nonce=%s\n", Nonce_Data);
-                Print(L"Nonce length=%d\n", Nonce_len);
+                Print(L"\n");
+                
                 // Hash Computation
                 //gBS->Stall(10000);
                 /*for(AddrIdx=0;AddrIdx<(1<<22);AddrIdx+=1<<3) {
@@ -158,9 +161,9 @@ UefiMain (
                             0,
                             &USB_Status
                         );
-                Print(L"Send hash value, Endpoint=%02x, Status=%d\n", OutEndpointAddr, Status);
+                Print(L"Send hash value, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
 
-                Status = UsbProtocol->UsbSyncInterruptTransfer (
+                Status = UsbProtocol->UsbBulkTransfer (
                             UsbProtocol,
                             InEndpointAddr,
                             &Verify_Data,
@@ -168,7 +171,8 @@ UefiMain (
                             0,
                             &USB_Status
                         );
-                Print(L"Receive verification result, ");
+                Print(L"Receive verification result, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
+
                 if(Verify_Data == 1) {
                     Print(L"this device is secure.\n");
                     Print(L"Firmware integrity validation completed. Boot process will be proceed.\n");
@@ -189,7 +193,7 @@ UefiMain (
                     // Firmware Overwrite
                     
                     gBS->Stall(5000);
-                    Print(L"Status=%d\n", Status);
+                    Print(L"Status:%r\n", Status);
                     Print(L"Recovery complete. System will be reboot soon.\n");
                     EfiShellProtocol->Execute (&ImageHandle,
                         L"reset",
@@ -199,6 +203,7 @@ UefiMain (
 
                 }
                 else {
+                    Print(L"process didn't processed normaly.\n");
                 }
                 goto Done;
             }
