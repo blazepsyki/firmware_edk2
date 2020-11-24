@@ -45,6 +45,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
+#  Vlv2TbltDevicePkg/PlatformPkg.dec
 
 [LibraryClasses]
   UefiApplicationEntryPoint
@@ -52,7 +53,8 @@
   PcdLib
 
 [Protocols]
-  gEfiUsbIoProtocolGuid  ## COMSUMES   ## GUID
+  gEfiUsbIoProtocolGuid  ## CONSUMES   ## GUID
+  gEfiShellProtocolGuid  ## CONSUMEs   ## GUID
 
 [FeaturePcd]
 #  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintEnable   ## CONSUMES
