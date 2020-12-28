@@ -65,7 +65,8 @@ UefiMain (
     // Data transfer 
     CHAR8 Nonce_Data[33] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
     CHAR8 Hash_Data[33] = "1A3E7942FC31AE45679B21DA967CE27\r\0";
-    UINT8 Verify_Data = 127;
+    CHAR8 FW_Data[512] = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    //UINT8 Verify_Data = 127;
     UINTN Nonce_len = 32;
     UINTN Hash_len = 33;
     UINTN VD_len = 1;
@@ -162,18 +163,41 @@ UefiMain (
                             &USB_Status
                         );
                 Print(L"Send hash value, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
-                Print(L"Hash value=%a", Hash_Data);
-
+                Print(L"Hash value=%a\n", Hash_Data);
+                
+                for(Index=0;Index<16384;Index++) {
+                    Status = UsbProtocol->UsbBulkTransfer (
+                                UsbProtocol,
+                                InEndpointAddr,
+                                FW_Data,
+                                &VD_len,
+                                0,
+                                &USB_Status
+                        );
+                    Print(L"Receive firmware, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
+                    Print(L"%r\n", USB_Status);
+                    Print(L"Firmware length=%d\n", VD_len);
+                    Print(L"Firmware contents=%a\n", FW_Data);
+                }
+                /*
                 Status = UsbProtocol->UsbBulkTransfer (
                             UsbProtocol,
-                            InEndpointAddr,
-                            &Verify_Data,
-                            &VD_len,
+                            OutEndpointAddr,
+                            "1234567890ABCDEF",
+                            16,
                             0,
                             &USB_Status
                         );
-                Print(L"Receive verification result, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
-                Print(L"%r\n", USB_Status);
+                Status = UsbProtocol->UsbBulkTransfer (
+                            UsbProtocol,
+                            InEndpointAddr,
+                            ""
+                            ""
+                            0,
+                            &USB_Status
+                        );
+                */
+                /*
                 if(Verify_Data == 1) {
                     Print(L"this device is secure.\n");
                     Print(L"Firmware integrity validation completed. Boot process will be proceed.\n");
@@ -182,14 +206,14 @@ UefiMain (
                 }
                 else if(Verify_Data == 2) {
                     Print(L"this device is not secure. Firmware overwrite initiated.\n");
-                    /*Status = UsbProtocol->UsbBulkTransfer (
+                    Status = UsbProtocol->UsbBulkTransfer (
                                 UsbProtocol,
                                 InEndpointAddr,
                                 &Verify_Data,
                                 &Data_len,
                                 0,
                                 &USB_Status
-                            );*/
+                            );
                     Print(L"Receive firmware image, Endpoint=%02x\n", InEndpointAddr);
                     // Firmware Overwrite
                     
@@ -205,7 +229,7 @@ UefiMain (
                 }
                 else {
                     Print(L"process didn't processed normaly.\n");
-                }
+                }*/
                 goto Done;
             }
         }
