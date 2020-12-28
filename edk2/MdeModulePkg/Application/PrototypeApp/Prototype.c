@@ -35,6 +35,7 @@ UefiMain (
   )
 {
 	UINT32      Index;
+    UINT32      Index2;
     UINT32      USB_Status = 0;
     EFI_STATUS  Status;
 
@@ -63,18 +64,19 @@ UefiMain (
     EFI_USB_ENDPOINT_DESCRIPTOR     EndpDesc;
 
     // Data transfer 
-    CHAR8 Nonce_Data[33] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
-    CHAR8 Hash_Data[33] = "1A3E7942FC31AE45679B21DA967CE27\r\0";
-    CHAR8 FW_Data[512] = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    CHAR8 Nonce_Data[32] = { 0, };
+    CHAR8 Hash_Data[32] = "1A3E7942FC31AE45679B21DA967CE275";
+    CHAR8 FW_Data[4096] = { 0, };
     //UINT8 Verify_Data = 127;
     UINTN Nonce_len = 32;
-    UINTN Hash_len = 33;
-    UINTN VD_len = 1;
+    UINTN Hash_len = 32;
+    UINTN VD_len = 4096;
 
     // Firmware read variables 
     //UINTN       AddrIdx;
 
 	Index = 0;
+    Index2 = 0;
  
     Status = gBS->LocateProtocol (&gEfiShellProtocolGuid,
                     NULL,
@@ -165,7 +167,8 @@ UefiMain (
                 Print(L"Send hash value, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
                 Print(L"Hash value=%a\n", Hash_Data);
                 
-                for(Index=0;Index<16384;Index++) {
+                Index = 0;
+                while(Index < 8388608) {
                     Status = UsbProtocol->UsbBulkTransfer (
                                 UsbProtocol,
                                 InEndpointAddr,
@@ -174,10 +177,24 @@ UefiMain (
                                 0,
                                 &USB_Status
                         );
-                    Print(L"Receive firmware, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
-                    Print(L"%r\n", USB_Status);
-                    Print(L"Firmware length=%d\n", VD_len);
-                    Print(L"Firmware contents=%a\n", FW_Data);
+                    //Print(L"Receive firmware, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
+                    //Print(L"%r\n", USB_Status);
+                    Print(L"Firmware length=%d, ", VD_len);
+                    Print(L"Index=%d\n", Index);
+                    //Print(L"Firmware contents=%a", FW_Data);
+                    //for(Index2=0;Index2<VD_len;Index2++) {
+                    //    Print(L"%08X ", FW_Data[Index2]);
+                    //}
+                    //Print(L"\n");
+                    if(VD_len > 1000) {
+                        //firmware write
+                    
+                        //Re-initialization
+                        Index += VD_len;
+                    }
+                    VD_len = 4096;
+                    FW_Data[0] = '\0';
+
                 }
                 /*
                 Status = UsbProtocol->UsbBulkTransfer (
