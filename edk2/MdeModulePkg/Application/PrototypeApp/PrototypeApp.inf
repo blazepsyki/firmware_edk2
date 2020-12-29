@@ -40,21 +40,36 @@
 
 [Sources]
   Prototype.c
-#  HelloWorldStr.uni
+  FirmwareUpdate.h
 
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
-#  Vlv2TbltDevicePkg/PlatformPkg.dec
+  IA32FamilyCpuPkg/IA32FamilyCpuPkg.dec
+  Vlv2TbltDevicePkg/PlatformPkg.dec
+  Vlv2DeviceRefCodePkg/Vlv2DeviceRefCodePkg.dec
+  ShellPkg/ShellPkg.dec
 
 [LibraryClasses]
   UefiApplicationEntryPoint
   UefiLib
   PcdLib
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  MemoryAllocationLib
+  PcdLib
+  ShellCEntryLib
+  ShellLib
+  UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
 
 [Protocols]
   gEfiUsbIoProtocolGuid  ## CONSUMES   ## GUID
   gEfiShellProtocolGuid  ## CONSUMEs   ## GUID
+  gEfiLoadedImageProtocolGuid                   # PROTOCOL ALWAYS_CONSUMED
+  gEfiFirmwareVolumeBlockProtocolGuid           # PROTOCOL ALWAYS_CONSUMED
+  gEfiSpiProtocolGuid
 
 [FeaturePcd]
 #  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintEnable   ## CONSUMES
@@ -62,6 +77,28 @@
 [Pcd]
 #  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintString   ## SOMETIMES_CONSUMES
 #  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintTimes    ## SOMETIMES_CONSUMES
+  gEfiMdePkgTokenSpaceGuid.PcdUefiLibMaxPrintBufferSize   ## CONSUMES
+
+[FixedPcd]
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase
+
+  gPlatformModuleTokenSpaceGuid.PcdFlashChipBase
+  gPlatformModuleTokenSpaceGuid.PcdFlashChipSize
+  gPlatformModuleTokenSpaceGuid.PcdFlashDescriptorBase
+  gPlatformModuleTokenSpaceGuid.PcdFlashDescriptorSize
+  gPlatformModuleTokenSpaceGuid.PcdTxeRomBase
+  gPlatformModuleTokenSpaceGuid.PcdTxeRomSize
+  gPlatformModuleTokenSpaceGuid.PcdBiosRomBase
+  gPlatformModuleTokenSpaceGuid.PcdBiosRomSize
+
+[BuildOptions]
+  MSFT:*_*_X64_CC_FLAGS       = /Od 
+  INTEL:*_*_X64_CC_FLAGS       = /Od 
 
 # [UserExtensions.TianoCore."ExtraFiles"]
 #   HelloWorldExtra.uni
