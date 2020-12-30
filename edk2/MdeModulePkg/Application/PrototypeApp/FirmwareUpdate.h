@@ -211,6 +211,40 @@ SpiFlashBlockErase (
   return Status;
 }
 
+STATIC
+EFI_STATUS
+InternalCompareBlock (
+        IN  EFI_PHYSICAL_ADDRESS        BaseAddress,
+        IN  UINT8                       *Buffer
+        )
+{
+    EFI_STATUS                              Status;
+    VOID                                    *CompareBuffer;
+    UINT32                                  NumBytes;
+    INTN                                    CompareResult;
 
+    NumBytes = BLOCK_SIZE;
+    CompareBuffer = AllocatePool (NumBytes);
+    if (CompareBuffer == NULL) {
+        Status = EFI_OUT_OF_RESOURCES;
+        goto Done;
+    }
+
+    Status = SpiFlashRead ((UINTN) BaseAddress, &NumBytes, CompareBuffer);
+    if (EFI_ERROR (Status)) {
+        goto Done;
+    }
+    CompareResult = CompareMem (CompareBuffer, Buffer, BLOCK_SIZE);
+    if (CompareResult != 0) {
+        Status = EFI_VOLUME_CORRUPTED;
+    }
+
+Done:
+    if (CompareBuffer != NULL) {
+        FreePool (CompareBuffer);
+    }
+
+    return Status;
+}
 
 #endif
