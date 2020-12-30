@@ -221,12 +221,14 @@ UefiMain (
             Nonce_len = 32;
     }
     Print(L"Receive nonce value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
+    /*
     Print(L"Nonce length=%d\n", Nonce_len);
     Print(L"Nonce=");
     for(Index=0;Index<Nonce_len;Index++) {
         Print(L"%02x ", Nonce_Data[Index]);
     }
     Print(L"\n");
+    */
 
     // Hash Computation
     //Index  = 0;
@@ -248,6 +250,7 @@ UefiMain (
             &USB_Status
             );
     Print(L"Send hash value, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
+    /*
     Print(L"Hash length=%d\n", Hash_len);
     Print(L"Hash=");
     for(Index=0;Index<Hash_len;Index++) {
@@ -255,6 +258,7 @@ UefiMain (
     }
     Print(L"\n");
     Print(L"Hash value = %a\n", Hash_Data);
+    */
 
     //
     // Receive Verify data
@@ -274,12 +278,14 @@ UefiMain (
             Verify_len = 100;
     }
     Print(L"Receive verify data value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
+    /*
     Print(L"verify data length=%d\n", Verify_len);
     Print(L"verify data=");
     for(Index=0;Index<Verify_len;Index++) {
         Print(L"%02x", Verify_Data[Index]);
     }
     Print(L"\n");
+    */
 
     //
     // Check Verify data
@@ -290,12 +296,14 @@ UefiMain (
         goto Done;
     }
     else if(Verify_Data[15] == '2') {
+        Print(L"Device is not secure.");
         // Return Not OK: Firmware Transmission
         Index = 0;
         OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
         Address = PcdGet32 (PcdFlashChipBase);
 
         // Erase whole firmware
+        Print(L"Erase SPI flashrom. Processing...");
         Status = SpiFlashBlockErase ((UINTN) Address, &FileSize);
         if (EFI_ERROR (Status)) {
             gBS->RestoreTPL (OldTpl);
@@ -304,6 +312,7 @@ UefiMain (
         }
 
         // Bulk transfer and write data
+        Print(L"Receive firmware, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
         while(Index < 8388608) {
             Status = UsbProtocol->UsbBulkTransfer (
                     UsbProtocol,
@@ -313,10 +322,9 @@ UefiMain (
                     0,
                     &USB_Status
                     );
-            //Print(L"Receive firmware, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
             //Print(L"%r\n", USB_Status);
-            Print(L"Firmware length=%d, ", FW_len);
-            Print(L"Index=%d\n", Index);
+            //Print(L"Firmware length=%d, ", FW_len);
+            //Print(L"Index=%d\n", Index);
             //Print(L"Firmware contents=%a", FW_Data);
             //for(Index2=0;Index2<VD_len;Index2++) {
             //    Print(L"%08X ", FW_Data[Index2]);
@@ -339,67 +347,80 @@ UefiMain (
             }
             FW_len = 4096;
             FW_Data[0] = '\0';
+            Print(L".");
         }
+        Print(L"\n");
         gBS->RestoreTPL (OldTpl);
         goto Done;
     }
     else {
         Print(L"Process didn't processed normally. Somethings is gone wrong.\n");
     }
-}
-}
-}
 
-Print(L"\nURD is not detected. System will be shut down.\n\n");
-gBS->Stall(100000);
-Print(L"Shutdown in 5 seconds...\n");
-gBS->Stall(100000); 
-Print(L"Shutdown in 4 seconds...\n");
-gBS->Stall(100000);
-Print(L"Shutdown in 3 seconds...\n");
-gBS->Stall(100000);
-Print(L"Shutdown in 2 seconds...\n");
-gBS->Stall(100000);
-Print(L"Shutdown in 1 second...\n");
-gBS->Stall(100000);
 
-EfiShellProtocol->Execute (&ImageHandle,
-        L"reset -s",
-        NULL,
-        &Status);
-return EFI_NOT_READY;
+
+
+    Print(L"\nURD is not detected. System will be shut down.\n\n");
+    gBS->Stall(100000);
+    Print(L"Shutdown in 5 seconds...\n");
+    gBS->Stall(100000); 
+    Print(L"Shutdown in 4 seconds...\n");
+    gBS->Stall(100000);
+    Print(L"Shutdown in 3 seconds...\n");
+    gBS->Stall(100000);
+    Print(L"Shutdown in 2 seconds...\n");
+    gBS->Stall(100000);
+    Print(L"Shutdown in 1 second...\n");
+    gBS->Stall(100000);
+
+    gRT-> ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+    /*
+       EfiShellProtocol->Execute (&ImageHandle,
+       L"reset -s",
+       NULL,
+       &Status);*/
+    return EFI_NOT_READY;
+
 
 Done:
-FreePool (UsbHandleBuffer);
-Print(L"\nFirmware checking is complete.\n\n");
-if(ResetRequired && !FlashError) {
-    Print(L"Reboot will be proceeded due to flash update.");
-    gBS->Stall(100000);
-    Print(L"Reboot in 5 seconds...\n");
-    gBS->Stall(100000); 
-    Print(L"Reboot in 4 seconds...\n");
-    gBS->Stall(100000);
-    Print(L"Reboot in 3 seconds...\n");
-    gBS->Stall(100000);
-    Print(L"Reboot in 2 seconds...\n");
-    gBS->Stall(100000);
-    Print(L"Reboot in 1 second...\n");
-    gBS->Stall(100000);
+    FreePool (UsbHandleBuffer);
+    Print(L"\nFirmware checking is complete.\n\n");
+    if(ResetRequired && !FlashError) {
+        Print(L"Reboot will be proceeded due to flash update.");
+        gBS->Stall(100000);
+        Print(L"Reboot in 5 seconds...\n");
+        gBS->Stall(100000); 
+        Print(L"Reboot in 4 seconds...\n");
+        gBS->Stall(100000);
+        Print(L"Reboot in 3 seconds...\n");
+        gBS->Stall(100000);
+        Print(L"Reboot in 2 seconds...\n");
+        gBS->Stall(100000);
+        Print(L"Reboot in 1 second...\n");
+        gBS->Stall(100000);
+        gRT->ResetSystem (EfiResetCold, EFI_SUCCESS, 0, NULL);
+        /*
+           EfiShellProtocol->Execute (&ImageHandle,
+           L"reset",
+           NULL,
+           &Status);
+         */
+    }
+
+    //
+    // Loading Bootloader
+    //
+
+    /*
+       EfiShellProtocol->Execute (&ImageHandle,
+       L"fs0:",
+       NULL,
+       &Status);
+     */
     EfiShellProtocol->Execute (&ImageHandle,
-            L"reset",
+            L"grubx64.efi",
             NULL,
             &Status);
-}
-/*
-   EfiShellProtocol->Execute (&ImageHandle,
-   L"fs0:",
-   NULL,
-   &Status);
- */
-EfiShellProtocol->Execute (&ImageHandle,
-        L"grubx64.efi",
-        NULL,
-        &Status);
 
-return EFI_SUCCESS;
+    return EFI_SUCCESS;
 }
