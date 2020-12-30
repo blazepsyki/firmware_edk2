@@ -73,12 +73,14 @@ UefiMain (
     CHAR8 Hash_Data[32] = "1A3E7942FC31AE45679B21DA967CE275";
     UINT8 FW_Data[4096] = { 0, };
     UINT8 Verify_Data[100] = { 0, };
+    CHAR8 BD_Data[16] = "FEDCBA0987654321;
 
     UINTN Hello_len = 16;
     UINTN Nonce_len = 32;
     UINTN Hash_len = 32;
     UINTN FW_len = 4096;
     UINTN Verify_len = 100;
+    UINTN BD_len = 16;
 
     // Firmware read variables
 
@@ -383,7 +385,7 @@ UefiMain (
 
 
 Done:
-    FreePool (UsbHandleBuffer);
+   
     Print(L"\nFirmware checking is complete.\n\n");
     if(ResetRequired && !FlashError) {
         Print(L"Reboot will be proceeded due to flash update.");
@@ -406,21 +408,74 @@ Done:
            &Status);
          */
     }
+    //
+    // Send boot decision message
+    //
+    Status = UsbProtocol->UsbBulkTransfer (
+            UsbProtocol,
+            OutEndpointAddr,
+            BD_Data,
+            &BD_len,
+            0,
+            &USB_Status
+            );
+    Print(L"Send boot decision message, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
+    /*
+    Print(L"Hash length=%d\n", Hash_len);
+    Print(L"Hash=");
+    for(Index=0;Index<Hash_len;Index++) {
+        Print(L"%02x ", Hash_Data[Index]);
+    }
+    Print(L"\n");
+    Print(L"Hash value = %a\n", Hash_Data);
+    */
 
+    //
+    // Receive decision data
+    //
+    while(1) {
+        Status = UsbProtocol->UsbBulkTransfer (
+                UsbProtocol,
+                InEndpointAddr,
+                BD_Data,
+                &BD_len,
+                0,
+                &USB_Status
+                );
+        if(Verify_len == 16)
+            break;
+        else
+            Verify_len = 16;
+    }
+    Print(L"Receive decision data value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
+    /*
+    Print(L"verify data length=%d\n", Verify_len);
+    Print(L"verify data=");
+    for(Index=0;Index<Verify_len;Index++) {
+        Print(L"%02x", Verify_Data[Index]);
+    }
+    Print(L"\n");
+    */
+
+    FreePool (UsbHandleBuffer);
+    
     //
     // Loading Bootloader
     //
 
     /*
-       EfiShellProtocol->Execute (&ImageHandle,
-       L"fs0:",
-       NULL,
-       &Status);
-     */
+    EfiShellProtocol->Execute (&ImageHandle,
+    L"fs0:",
+    NULL,
+    &Status);
+    
     EfiShellProtocol->Execute (&ImageHandle,
             L"grubx64.efi",
             NULL,
             &Status);
+    */
+
+    // boot code
 
     return EFI_SUCCESS;
 }
