@@ -1666,6 +1666,7 @@ MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteSmmDxe.inf
 # UEFI URD Application
 #
 MdeModulePkg/Application/PrototypeApp/PrototypeApp.inf
+SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
 
 [BuildOptions]
 #

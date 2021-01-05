@@ -48,6 +48,7 @@
   IA32FamilyCpuPkg/IA32FamilyCpuPkg.dec
   Vlv2TbltDevicePkg/PlatformPkg.dec
   Vlv2DeviceRefCodePkg/Vlv2DeviceRefCodePkg.dec
+  SecurityPkg/SecurityPkg.dec
   ShellPkg/ShellPkg.dec
 
 [LibraryClasses]
@@ -67,6 +68,8 @@
 [Protocols]
   gEfiUsbIoProtocolGuid  ## CONSUMES   ## GUID
   gEfiShellProtocolGuid  ## CONSUMEs   ## GUID
+  gEfiHash2ServiceBindingProtocolGuid
+  gEfiHash2ProtocolGuid
   gEfiLoadedImageProtocolGuid                   # PROTOCOL ALWAYS_CONSUMED
   gEfiFirmwareVolumeBlockProtocolGuid           # PROTOCOL ALWAYS_CONSUMED
   gEfiSpiProtocolGuid
