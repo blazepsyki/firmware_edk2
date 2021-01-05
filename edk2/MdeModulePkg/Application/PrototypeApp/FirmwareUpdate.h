@@ -24,6 +24,7 @@ Copyright (c) 1999  - 2014, Intel Corporation. All rights reserved.<BR>
 #include <Protocol/FirmwareVolumeBlock.h>
 #include <Protocol/Hash2.h>
 #include <Protocol/LoadedImage.h>
+#include <Protocol/ServiceBinding.h>
 #include <Protocol/SimpleFileSystem.h>
 #include <Protocol/Spi.h>
 #include <Protocol/UsbIo.h>
@@ -41,8 +42,9 @@ Copyright (c) 1999  - 2014, Intel Corporation. All rights reserved.<BR>
 #include <Library/UefiLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 
-EFI_SPI_PROTOCOL  *mSpiProtocol;
-EFI_HASH2_PROTOCOL mHash2Protocol;
+EFI_SPI_PROTOCOL                *mSpiProtocol;
+EFI_HASH2_PROTOCOL              *mHash2Protocol;
+EFI_SERVICE_BINDING_PROTOCOL    *mHash2ServiceBindingProtocol;
 
 //
 // Prefix Opcode Index on the host SPI controller.
@@ -211,6 +213,7 @@ SpiFlashBlockErase (
   return Status;
 }
 
+#if 0
 STATIC
 EFI_STATUS
 InternalCompareBlock (
@@ -246,5 +249,6 @@ Done:
 
     return Status;
 }
+#endif
 
 #endif
