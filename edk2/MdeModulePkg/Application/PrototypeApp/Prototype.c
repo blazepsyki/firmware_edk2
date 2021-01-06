@@ -48,7 +48,10 @@ UefiMain (
     UINTN       UsbHandleCount;
     UINTN       UsbHandleIndex;
 
-    // Hash Handle variables
+    // Device Path
+    CONST CHAR16 HashDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
+
+    // Hash Handle variables 
     EFI_HANDLE  *Hash2ControllerHandle;
     EFI_HANDLE  Hash2SBHandle           = NULL;
     //UINTN       Hash2SBHandleCount;
@@ -118,6 +121,10 @@ UefiMain (
 
     Status = EFI_SUCCESS;
 
+    //
+    // Make available protocols to use them
+    //
+    
     // Locate Spi protocol
     Status = gBS->LocateProtocol (
             &gEfiSpiProtocolGuid,
@@ -125,101 +132,79 @@ UefiMain (
             (VOID **)&mSpiProtocol
             );
 
-    // Locate Shell protocol
-    Status = gBS->LocateProtocol (
+    //Print(L"Load SPI Protocol Status: %r\n", Status);
+    if (EFI_ERROR (Status))
+        return Status;
+
+    // Locate Shell protocol TODO: fix it
+    /*Status = gBS->LocateProtocol (
             &gEfiShellProtocolGuid,
             NULL,
             (VOID **) &EfiShellProtocol
             );
+    Print(L"Load Shell Protocol Status: %r\n", Status);
+    if (EFI_ERROR (Status))
+        return Status;*/
 
-    // Locate Hash Binding and protocol
-    
-    /*Status = gBS->LocateHandleBuffer (
-            ByProtocol,
+    // Make interface for hash protocol
+    /*Status = gBS->InstallProtocolInterface (
+            Hash2SBHandle,
             &gEfiHash2ServiceBindingProtocolGuid,
-            NULL,
-            &Hash2SBHandleCount,
-            &Hash2ControllerHandle
+            EFI_NATIVE_INTERFACE,
+            (VOID **) &mHash2ServiceBindingProtocol
             );
-
-    Print(L"Hash Binding Status: %r", Status);
-    Print(L"handle count=%d", Hash2SBHandleCount);
-    */ /*
+    Print(L"Install Protocol Interface for hash Status: %r\n", Status);
     if (EFI_ERROR (Status))
-        return Status;
-    Print(L"Connected Hash Binding Buffer: %d\n", HashBindingHandleCount);
-
-    Status = HashBindingHandleBuffer->Hash2ServiceBindingCreateChild ( 
-            HashBindingHandleBuffer,
-            HashHandleBuffer
-            );
-
-    Status = gBS->HandleProtocol (
-            HashHandleBuffer,
-            &gEfiHash2ProtocolGuid,
-            (VOID **) &mHash2Protocol
-            );
-    Print(L"Hash Protocol Status: %r", Status);
-    if (EFI_ERROR (Status))
-        return Status;
-     */
-
-    //
-    // Get the Hash2ServiceBinding Protocol
-    //
-    /*
-       Status = gBS->OpenProtocol (
-       Hash2ControllerHandle,
-       &gEfiHash2ServiceBindingProtocolGuid,
-       (VOID **)&mHash2ServiceBindingProtocol,
-       Hash2SBHandle,
-       Hash2ControllerHandle,
-       EFI_OPEN_PROTOCOL_GET_PROTOCOL
-       );
-       */
+        return Status;*/
     
+    // Load and start Hash Driver from USB 
+    Status = gBS->LoadImage (
+            FALSE,
+            ImageHandle,
+            ConvertTextToDevicePath (HashDriverPath),
+            NULL,
+            0,
+            &Hash2SBHandle);
+    //Print(L"Load Hash driver Status: %r\n", Status);
+    if (EFI_ERROR (Status))
+        return Status;
+    
+    Status = gBS->StartImage (
+            Hash2SBHandle,
+            0,
+            NULL);
+    //Print(L"Start Hash driver Status: %r\n", Status);  
+    if (EFI_ERROR (Status))
+        return Status;
+
+    // Locate Hash Service Binding protocol
     Status = gBS->LocateProtocol (
             &gEfiHash2ServiceBindingProtocolGuid,
             NULL,
             (VOID **)&mHash2ServiceBindingProtocol
             );
-    
-    Print(L"Hash Service Binding Protocol Status: %r", Status);
-    if (EFI_ERROR (Status)) {
-
+    //Print(L"Hash Service Binding Status: %r\n", Status);
+    if (EFI_ERROR (Status))
         return Status;
-    }
-    //
-    // Initialize a ChildHandle
-    //
-    Hash2ChildHandle = NULL;
 
-    //
     // Create a ChildHandle with the Hash2 Protocol
-    //
     Status = mHash2ServiceBindingProtocol->CreateChild (mHash2ServiceBindingProtocol, &Hash2ChildHandle);
-    Print(L"Child Handle by Hash Service Binding Protocol Status: %r", Status);
-    if (EFI_ERROR (Status)) {
+    //Print(L"Child Handle by Hash Service Binding Protocol Status: %r\n", Status);
+    if (EFI_ERROR (Status))
         return Status;
-    }
-    
-    //
+        
     // Retrieve the Hash2Protocol from Hash2ChildHandle
-    //
     Status = gBS->OpenProtocol ( 
             Hash2ChildHandle,
             &gEfiHash2ProtocolGuid,
             (VOID **)&mHash2Protocol,
             Hash2SBHandle,
             Hash2ControllerHandle,
-            EFI_OPEN_PROTOCOL_BY_DRIVER
+            EFI_OPEN_PROTOCOL_GET_PROTOCOL
             );
-
-    Print(L"Hash Protocol Status: %r", Status);
+    //Print(L"Hash Protocol Status: %r\n", Status);
     if (EFI_ERROR (Status))
         return Status;
-
-
 
     // Locate USB protocol
     Status = gBS->LocateHandleBuffer (
@@ -229,12 +214,13 @@ UefiMain (
             &UsbHandleCount,
             &UsbHandleBuffer
             );
-
     if (EFI_ERROR (Status))
         return Status;
 
+    //
+    // Make connection with URD
+    //
     Print(L"Connected USB Device: %d\n", UsbHandleCount);
-
     for(UsbHandleIndex=0; UsbHandleIndex < UsbHandleCount; UsbHandleIndex++) {
         Status = gBS->HandleProtocol (
                 UsbHandleBuffer[UsbHandleIndex],
@@ -273,12 +259,9 @@ UefiMain (
                         OutEndpointAddr = EndpDesc.EndpointAddress;
                 }
 
-
-
-                // 
+                //
                 // Send opening Signal
                 //
-
                 Status = UsbProtocol->UsbBulkTransfer (
                         UsbProtocol,
                         OutEndpointAddr,
