@@ -314,7 +314,7 @@ UefiMain (
                  */
 
                 // Hash Computation
-                /*Index = 0;
+                Index = 0;
                 Address = PcdGet32 (PcdFlashChipBase);
                 Status = mHash2Protocol->HashInit (
                         mHashProtocol,
@@ -354,7 +354,7 @@ UefiMain (
                     if(EFI_ERROR(Status)) {
                         
                     }
-                }*/
+                }
 
                 //
                 // Send hash value
