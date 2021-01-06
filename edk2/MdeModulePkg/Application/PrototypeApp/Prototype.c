@@ -48,8 +48,13 @@ UefiMain (
     UINTN       UsbHandleCount;
     UINTN       UsbHandleIndex;
 
-    // Device Path
+    // Device and Boot Path
     CONST CHAR16 HashDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
+    CONST CHAR16 BootPath_Succ[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/grupx64.efi";
+    //CONST CHAR16 BootPath_Fail[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/grupX64.efi;"
+
+    // Bootloader Image Handle
+    EFI_HANDLE  BootLoaderHandle;
 
     // Hash Handle variables 
     EFI_HANDLE  *Hash2ControllerHandle;
@@ -60,8 +65,8 @@ UefiMain (
 
 
     // URD Specification
-    UINT16      URD_IdVendor = 7531;
-    UINT16      URD_IdProduct = 260;
+    UINT16      URD_IdVendor = 1317;
+    UINT16      URD_IdProduct = 42149;
     UINT8       URD_InterfaceClass = 255;
     UINT8       URD_InterfaceSubClass = 0;
     UINT8       URD_InterfaceProtocol = 0;
@@ -79,22 +84,23 @@ UefiMain (
     EFI_USB_ENDPOINT_DESCRIPTOR     EndpDesc;
 
     // Data transfer
-    CHAR8 Hello_Data[16] = "1234567890ABCDEF";
-    CHAR8 Nonce_Data[33] = { 0, };
-    CHAR8 Hash_Data[32] = "1A3E7942FC31AE45679B21DA967CE275";
-    UINT8 FW_Data[4096] = { 0, };
-    UINT8 Verify_Data[100] = { 0, };
-    CHAR8 BD_Data[16] = "FEDCBA0987654321";
+    CHAR8 Hello_Data[16]    = "1234567890ABCDEF";
+    CHAR8 Nonce_Data[33]    = { 0, };
+    CHAR8 Hash_Data[32]     = "1A3E7942FC31AE45679B21DA967CE275";
+    UINT8 FW_Data[4096]     = { 0, };
+    UINT8 Verify_Data[100]  = { 0, };
+    //CHAR8 BD_Data[16]     = "FEDCBA0987654321";
 
-    UINTN Hello_len = 16;
-    UINTN Nonce_len = 32;
-    UINTN Hash_len = 32;
-    UINTN FW_len = 4096;
-    UINTN Verify_len = 100;
-    UINTN BD_len = 16;
+    UINTN Hello_len     = 16;
+    UINTN Nonce_len     = 32;
+    UINTN Hash_len      = 32;
+    UINTN FW_len        = 4096;
+    UINTN Verify_len    = 100;
+    //UINTN BD_len      = 16;
 
     // Firmware read variables
-
+    UINT32 ReadByte_Num = 256;
+    UINT8 ReadBuffer[256] = { 0, };
 
     // Firmware write variables 
     UINTN                 FileSize;
@@ -137,13 +143,13 @@ UefiMain (
         return Status;
 
     // Locate Shell protocol TODO: fix it
-    /*Status = gBS->LocateProtocol (
+    Status = gBS->LocateProtocol (
             &gEfiShellProtocolGuid,
             NULL,
             (VOID **) &EfiShellProtocol
             );
     Print(L"Load Shell Protocol Status: %r\n", Status);
-    if (EFI_ERROR (Status))
+    /*if (EFI_ERROR (Status))
         return Status;*/
 
     // Make interface for hash protocol
@@ -308,12 +314,47 @@ UefiMain (
                  */
 
                 // Hash Computation
-                //Index  = 0;
-                //Address = PcdGet32 (PcdFlashChipBase);
-                //for(Index=0;AddrIdx<(1<<22);AddrIdx+=1<<3) {
-                //    SpiFlashRead( );
-                //    
-                //}
+                /*Index = 0;
+                Address = PcdGet32 (PcdFlashChipBase);
+                Status = mHash2Protocol->HashInit (
+                        mHashProtocol,
+                        EFI_HASH_ALGORITHM_SHA256_GUID);
+                Print(L"Hash Initialize status: %r\n", Status);
+                if (EFI_ERROR (Status))
+                    return Status;
+
+                Status = mHash2Protocol->HashUpdate (
+                        mHash2Protocol,
+                        (CONST) Nonce_Data,
+                        32);
+                Print(L"Hash Update first with nonce, Status: %r\n", Status);
+                if (EFI_ERROR (Status))
+                    return Status;
+
+                while(Index < (1<<22)) {
+                    Status = SpiFlashRead((UINTN) Address, ReadByte_Num, ReadBuffer);
+                    if(EFI_ERROR(Status))
+                        continue;
+                    if(ReadByte_Num != 32) {
+                        ReadByte_Num == 32;
+                        continue;
+                    }
+                    Status = mHash2Protocol->HashUpdate (
+                            mHash2Protocol,
+                            (CONST) ReadBuffer,
+                            ReadByte_Num);
+                    if(EFI_ERROR(Status))
+                        continue;
+                    Print(L"Hash Update with F/W, Status: %r\n", Status);
+                    Index += 1<<3;
+                }
+                
+                for(Index = 0; Index < (1<<22); Index += 1<<3) {
+                    Status = SpiFlashRead((UINTN) Address, ReadByte_Num, ReadBuffer);
+                    if(EFI_ERROR(Status)) {
+                        
+                    }
+                }*/
 
                 //
                 // Send hash value
@@ -478,26 +519,21 @@ Done:
         Print(L"Reboot in 1 second...\n");
         gBS->Stall(100000);
         gRT->ResetSystem (EfiResetCold, EFI_SUCCESS, 0, NULL);
-        /*
-           EfiShellProtocol->Execute (&ImageHandle,
-           L"reset",
-           NULL,
-           &Status);
-         */
     }
     //
-    // Send boot decision message
+    // Exchange boot decision
     //
-    Status = UsbProtocol->UsbBulkTransfer (
-            UsbProtocol,
-            OutEndpointAddr,
-            BD_Data,
-            &BD_len,
-            0,
-            &USB_Status
-            );
-    Print(L"Send boot decision message, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
     /*
+       Status = UsbProtocol->UsbBulkTransfer (
+       UsbProtocol,
+       OutEndpointAddr,
+       BD_Data,
+       &BD_len,
+       0,
+       &USB_Status
+       );
+       Print(L"Send boot decision message, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
+
        Print(L"Hash length=%d\n", Hash_len);
        Print(L"Hash=");
        for(Index=0;Index<Hash_len;Index++) {
@@ -505,33 +541,33 @@ Done:
        }
        Print(L"\n");
        Print(L"Hash value = %a\n", Hash_Data);
-     */
+
 
     //
     // Receive decision data
     //
     while(1) {
-        Status = UsbProtocol->UsbBulkTransfer (
-                UsbProtocol,
-                InEndpointAddr,
-                BD_Data,
-                &BD_len,
-                0,
-                &USB_Status
-                );
-        if(Verify_len == 16)
-            break;
-        else
-            Verify_len = 16;
+    Status = UsbProtocol->UsbBulkTransfer (
+    UsbProtocol,
+    InEndpointAddr,
+    BD_Data,
+    &BD_len,
+    0,
+    &USB_Status
+    );
+    if(Verify_len == 16)
+    break;
+    else
+    Verify_len = 16;
     }
     Print(L"Receive decision data value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
-    /*
-       Print(L"verify data length=%d\n", Verify_len);
-       Print(L"verify data=");
-       for(Index=0;Index<Verify_len;Index++) {
-       Print(L"%02x", Verify_Data[Index]);
-       }
-       Print(L"\n");
+
+    Print(L"verify data length=%d\n", Verify_len);
+    Print(L"verify data=");
+    for(Index=0;Index<Verify_len;Index++) {
+    Print(L"%02x", Verify_Data[Index]);
+    }
+    Print(L"\n");
      */
 
     FreePool (UsbHandleBuffer);
@@ -539,20 +575,20 @@ Done:
     //
     // Loading Bootloader
     //
-
-    /*
-       EfiShellProtocol->Execute (&ImageHandle,
-       L"fs0:",
-       NULL,
-       &Status);
-
-       EfiShellProtocol->Execute (&ImageHandle,
-       L"grubx64.efi",
-       NULL,
-       &Status);
-     */
-
-    // boot code
-
+    Status = gBS->LoadImage (
+            FALSE,
+            ImageHandle,
+            ConvertTextToDevicePath (BootPath_Succ),
+            NULL,
+            0,
+            &BootLoaderHandle);
+    Print(L"Load Normal bootloader Status: %r\n", Status);
+    if (EFI_ERROR (Status))
+        return Status;
+    
+    Status = gBS->StartImage (
+            BootLoaderHandle,
+            0,
+            NULL);
     return EFI_SUCCESS;
 }
