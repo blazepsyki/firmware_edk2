@@ -63,6 +63,7 @@
 [Protocols]
   gEfiLoadedImageProtocolGuid                   # PROTOCOL ALWAYS_CONSUMED
   gEfiFirmwareVolumeBlockProtocolGuid           # PROTOCOL ALWAYS_CONSUMED
+  gEfi
   gEfiSpiProtocolGuid
 
 [Pcd]

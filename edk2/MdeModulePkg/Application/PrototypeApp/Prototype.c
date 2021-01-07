@@ -317,44 +317,50 @@ UefiMain (
                 Index = 0;
                 Address = PcdGet32 (PcdFlashChipBase);
                 Status = mHash2Protocol->HashInit (
-                        mHashProtocol,
-                        EFI_HASH_ALGORITHM_SHA256_GUID);
+                        mHash2Protocol,
+                        &gEfiHashAlgorithmSha256Guid);
                 Print(L"Hash Initialize status: %r\n", Status);
                 if (EFI_ERROR (Status))
                     return Status;
 
                 Status = mHash2Protocol->HashUpdate (
                         mHash2Protocol,
-                        (CONST) Nonce_Data,
+                        (CONST UINT8 *) Nonce_Data,
                         32);
                 Print(L"Hash Update first with nonce, Status: %r\n", Status);
                 if (EFI_ERROR (Status))
                     return Status;
 
                 while(Index < (1<<22)) {
-                    Status = SpiFlashRead((UINTN) Address, ReadByte_Num, ReadBuffer);
+                    Status = SpiFlashRead (
+                            (UINTN) Address,
+                            &ReadByte_Num, 
+                            ReadBuffer);
                     if(EFI_ERROR(Status))
                         continue;
                     if(ReadByte_Num != 32) {
-                        ReadByte_Num == 32;
+                        ReadByte_Num = 32;
                         continue;
                     }
                     Status = mHash2Protocol->HashUpdate (
                             mHash2Protocol,
-                            (CONST) ReadBuffer,
+                            ReadBuffer,
                             ReadByte_Num);
                     if(EFI_ERROR(Status))
                         continue;
                     Print(L"Hash Update with F/W, Status: %r\n", Status);
                     Index += 1<<3;
                 }
-                
-                for(Index = 0; Index < (1<<22); Index += 1<<3) {
-                    Status = SpiFlashRead((UINTN) Address, ReadByte_Num, ReadBuffer);
-                    if(EFI_ERROR(Status)) {
-                        
-                    }
-                }
+
+//                Status = mHash2Protocol->HashFinal (
+//                        mHash2Protocol,
+
+//                for(Index = 0; Index < (1<<22); Index += 1<<3) {
+//                    Status = SpiFlashRead((UINTN) Address, ReadByte_Num, ReadBuffer);
+//                    if(EFI_ERROR(Status)) {
+//                        
+//                    }
+//                }
 
                 //
                 // Send hash value
