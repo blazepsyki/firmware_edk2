@@ -43,26 +43,16 @@ UefiMain (
     UINT32      USB_Status = 0;
     EFI_STATUS  Status;
 
-    // Usb Handle variables
+    // Handle variables
     EFI_HANDLE  *UsbHandleBuffer;
     UINTN       UsbHandleCount;
     UINTN       UsbHandleIndex;
 
-    // Device and Boot Path
-    CONST CHAR16 HashDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
-    CONST CHAR16 BootPath_Succ[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/grupx64.efi";
-    //CONST CHAR16 BootPath_Fail[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/grupX64.efi;"
-
-    // Bootloader Image Handle
     EFI_HANDLE  BootLoaderHandle;
 
-    // Hash Handle variables 
     EFI_HANDLE  *Hash2ControllerHandle;
     EFI_HANDLE  Hash2SBHandle           = NULL;
-    //UINTN       Hash2SBHandleCount;
- 
     EFI_HANDLE  Hash2ChildHandle        = NULL;
-
 
     // URD Specification
     UINT16      URD_IdVendor = 1317;
@@ -89,18 +79,18 @@ UefiMain (
     CHAR8 Hash_Data[32]     = "1A3E7942FC31AE45679B21DA967CE275";
     UINT8 FW_Data[4096]     = { 0, };
     UINT8 Verify_Data[100]  = { 0, };
-    //CHAR8 BD_Data[16]     = "FEDCBA0987654321";
+    CHAR8 BD_Data[48]     = "FEDCBA0987654321";
 
     UINTN Hello_len     = 16;
     UINTN Nonce_len     = 32;
     UINTN Hash_len      = 32;
     UINTN FW_len        = 4096;
     UINTN Verify_len    = 100;
-    //UINTN BD_len      = 16;
+    UINTN BD_len      = 16;
 
     // Firmware read variables
-    UINT32 ReadByte_Num = 256;
-    UINT8 ReadBuffer[256] = { 0, };
+    UINT32 ReadByte_Num = 4096;
+    UINT8 ReadBuffer[4096] = { 0, };
 
     // Firmware write variables 
     UINTN                 FileSize;
@@ -112,6 +102,14 @@ UefiMain (
     EFI_TPL               OldTpl;
     BOOLEAN               ResetRequired;
     BOOLEAN               FlashError;
+
+    // Device and Boot Path
+    CONST CHAR16 HashDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
+    CONST CHAR16 BootPath_Succ[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
+    CONST CHAR16 BootPath_Fail[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/grupX64.efi";
+
+    // Hash variables
+    EFI_HASH2_OUTPUT HashResult;
 
     // Variable Initialization
     Index             = 0;
@@ -314,54 +312,93 @@ UefiMain (
                  */
 
                 // Hash Computation
-                Index = 0;
-                Address = PcdGet32 (PcdFlashChipBase);
+                Index = 5308416;
+                Address = PcdGet32 (PcdFlashChipBase) + Index;
+
                 Status = mHash2Protocol->HashInit (
                         mHash2Protocol,
                         &gEfiHashAlgorithmSha256Guid);
-                Print(L"Hash Initialize status: %r\n", Status);
+                //Print(L"Hash Initialize status: %r\n", Status);
                 if (EFI_ERROR (Status))
                     return Status;
-
+                
+                // Hash test code for nonce only
+                /*Status = mHash2Protocol->Hash (
+                        mHash2Protocol,
+                        &gEfiHashAlgorithmSha256Guid,
+                        (CONST UINT8 *) Nonce_Data,
+                        32,
+                        &HashResult);
+                Print(L"Hash, with only Nonce, value: ");
+                for(Index = 0; Index < 32; Index++) {
+                    Print(L"%02x ", HashResult.Sha256Hash[Index]);
+                }
+                Print(L"\n");
+                */
+                
                 Status = mHash2Protocol->HashUpdate (
                         mHash2Protocol,
                         (CONST UINT8 *) Nonce_Data,
                         32);
                 Print(L"Hash Update first with nonce, Status: %r\n", Status);
+ 
                 if (EFI_ERROR (Status))
                     return Status;
 
-                while(Index < (1<<22)) {
+                OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
+                while(Index < (1<<23)) {
                     Status = SpiFlashRead (
                             (UINTN) Address,
                             &ReadByte_Num, 
                             ReadBuffer);
-                    if(EFI_ERROR(Status))
-                        continue;
-                    if(ReadByte_Num != 32) {
-                        ReadByte_Num = 32;
+//                    if(EFI_ERROR(Status)) {
+//                        Print(L"SpiError: %r, %d, %d\r", Status, Address, &ReadByte_Num);
+//                        continue;
+//                    }
+                    if((EFI_ERROR(Status)) || (ReadByte_Num != 4096)) {
+                        ReadByte_Num = 4096;
+//                        Print(L"SpiError: %r, %d, %d\n", Status, Address, &ReadByte_Num);
                         continue;
                     }
                     Status = mHash2Protocol->HashUpdate (
                             mHash2Protocol,
                             ReadBuffer,
                             ReadByte_Num);
-                    if(EFI_ERROR(Status))
+                    if(EFI_ERROR(Status)) {
+//                        Print(L"HashError: %r, %d, %d\n", Status, Address, &ReadByte_Num);
                         continue;
-                    Print(L"Hash Update with F/W, Status: %r\n", Status);
-                    Index += 1<<3;
+                    }
+//                    Print(L"Read SPI and Hash update: %r, Readbyte: %d, Index: %d\n", Status, ReadByte_Num, (Index>>12));
+                    // Test code: reading flash verification
+                    /*Print(L"Read result=");
+                    for(Index2 = 0; Index2 < ReadByte_Num; Index2++) {
+                        Print(L"%02x ", ReadBuffer[Index2]);
+                    }
+                    Print(L"\n");*/
+//                    Print (L".");
+                    Address += 1<<12;
+                    Index += 1<<12;
                 }
 
-//                Status = mHash2Protocol->HashFinal (
-//                        mHash2Protocol,
+                gBS->RestoreTPL (OldTpl);
+                Status = mHash2Protocol->HashFinal (
+                        mHash2Protocol,
+                        &HashResult
+                        );
+                Print(L"\rHash Computation complete, Status: %r\n", Status);
+                if (EFI_ERROR (Status))
+                    return Status;
+                Print(L"Hash value: %a\n", HashResult.Sha256Hash);
+                Print(L"Hash value: ");
+                for(Index = 0; Index < 32; Index++) {
+                    Print(L"%02x ", HashResult.Sha256Hash[Index]);
+                }
+                Print(L"\n");
 
-//                for(Index = 0; Index < (1<<22); Index += 1<<3) {
-//                    Status = SpiFlashRead((UINTN) Address, ReadByte_Num, ReadBuffer);
-//                    if(EFI_ERROR(Status)) {
-//                        
-//                    }
-//                }
-
+                // Copy Hash value to variable for Tx
+                for(Index = 0; Index < 32; Index ++) {
+                    Hash_Data[Index] = (CHAR8) HashResult.Sha256Hash[Index];
+                }
                 //
                 // Send hash value
                 //
@@ -396,10 +433,10 @@ UefiMain (
                             0,
                             &USB_Status
                             );
-                    if(Verify_len == 100)
+                    if(Verify_len == 40)
                         break;
                     else
-                        Verify_len = 100;
+                        Verify_len = 40;
                 }
                 Print(L"Receive verify data value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
                 /*
@@ -430,6 +467,7 @@ UefiMain (
                     Print(L"Erase SPI flashrom. Processing...");
                     Status = SpiFlashBlockErase ((UINTN) Address, &FileSize);
                     if (EFI_ERROR (Status)) {
+                        Print(L"Error occurs when erasing. Reboot now.\n");
                         gBS->RestoreTPL (OldTpl);
                         FlashError = TRUE;
                         goto Done;
@@ -529,69 +567,78 @@ Done:
     //
     // Exchange boot decision
     //
-    /*
-       Status = UsbProtocol->UsbBulkTransfer (
-       UsbProtocol,
-       OutEndpointAddr,
-       BD_Data,
-       &BD_len,
-       0,
-       &USB_Status
-       );
-       Print(L"Send boot decision message, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
 
-       Print(L"Hash length=%d\n", Hash_len);
-       Print(L"Hash=");
-       for(Index=0;Index<Hash_len;Index++) {
-       Print(L"%02x ", Hash_Data[Index]);
-       }
-       Print(L"\n");
-       Print(L"Hash value = %a\n", Hash_Data);
-
+    Status = UsbProtocol->UsbBulkTransfer (
+            UsbProtocol,
+            OutEndpointAddr,
+            BD_Data,
+            &BD_len,
+            0,
+            &USB_Status
+            );
+    Print(L"Send boot decision message, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
 
     //
     // Receive decision data
     //
     while(1) {
-    Status = UsbProtocol->UsbBulkTransfer (
-    UsbProtocol,
-    InEndpointAddr,
-    BD_Data,
-    &BD_len,
-    0,
-    &USB_Status
-    );
-    if(Verify_len == 16)
-    break;
-    else
-    Verify_len = 16;
+        Status = UsbProtocol->UsbBulkTransfer (
+                UsbProtocol,
+                InEndpointAddr,
+                BD_Data,
+                &BD_len,
+                0,
+                &USB_Status
+                );
+        if(BD_len == 48)
+            break;
+        else
+            BD_len = 48;
     }
     Print(L"Receive decision data value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
 
-    Print(L"verify data length=%d\n", Verify_len);
-    Print(L"verify data=");
-    for(Index=0;Index<Verify_len;Index++) {
-    Print(L"%02x", Verify_Data[Index]);
+    Print(L"Decision data data length=%d\n", BD_len);
+    Print(L"Decision data=");
+    for(Index=0;Index<BD_len;Index++) {
+        Print(L"%02x", BD_Data[Index]);
     }
     Print(L"\n");
-     */
 
     FreePool (UsbHandleBuffer);
 
     //
     // Loading Bootloader
     //
-    Status = gBS->LoadImage (
-            FALSE,
-            ImageHandle,
-            ConvertTextToDevicePath (BootPath_Succ),
-            NULL,
-            0,
-            &BootLoaderHandle);
-    Print(L"Load Normal bootloader Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
-    
+    if(BD_Data[10] == 'O') {
+        Status = gBS->LoadImage (
+                FALSE,
+                ImageHandle,
+                ConvertTextToDevicePath (BootPath_Succ),
+                NULL,
+                0,
+                &BootLoaderHandle);
+        Print(L"Load Normal bootloader Status: %r\n", Status);
+        if (EFI_ERROR (Status))
+            return Status;
+    }
+    else if(BD_Data[10] == 'X') {
+        Status = gBS->LoadImage (
+                FALSE,
+                ImageHandle,
+                ConvertTextToDevicePath (BootPath_Fail),
+                NULL,
+                0,
+                &BootLoaderHandle);
+        Print(L"Load Emergency bootloader Status: %r\n", Status);
+        if (EFI_ERROR (Status))
+            return Status;
+
+    }
+    else
+    {
+        Print(L"Wrong response. Program will shut down.\n");
+        return EFI_UNSUPPORTED;
+    }
     Status = gBS->StartImage (
             BootLoaderHandle,
             0,
