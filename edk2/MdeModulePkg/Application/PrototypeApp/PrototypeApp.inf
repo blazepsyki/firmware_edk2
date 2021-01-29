@@ -65,6 +65,7 @@
   ShellLib
   UefiBootServicesTableLib
   UefiRuntimeServicesTableLib
+  RngLib
 
 [Protocols]
   gEfiUsbIoProtocolGuid  ## CONSUMES   ## GUID
@@ -75,9 +76,11 @@
   gEfiLoadedImageProtocolGuid                   # PROTOCOL ALWAYS_CONSUMED
   gEfiFirmwareVolumeBlockProtocolGuid           # PROTOCOL ALWAYS_CONSUMED
   gEfiSpiProtocolGuid
+  gEfiRngProtocolGuid
 
 [Guids]
   gEfiHashAlgorithmSha256Guid
+  gEfiRngAlgorithmSp80090Hash256Guid
 
 [FeaturePcd]
 #  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintEnable   ## CONSUMES

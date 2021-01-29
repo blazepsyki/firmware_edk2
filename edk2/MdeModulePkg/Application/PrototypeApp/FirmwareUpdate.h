@@ -27,11 +27,13 @@ Copyright (c) 1999  - 2014, Intel Corporation. All rights reserved.<BR>
 #include <Protocol/ServiceBinding.h>
 #include <Protocol/SimpleFileSystem.h>
 #include <Protocol/Spi.h>
-#include <Protocol/UsbIo.h>
 #include <Protocol/Shell.h>
+#include <Protocol/UsbIo.h>
+#include <Protocol/Rng.h>
 
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/RngLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
@@ -44,6 +46,7 @@ Copyright (c) 1999  - 2014, Intel Corporation. All rights reserved.<BR>
 #include <Library/UefiRuntimeServicesTableLib.h>
 
 EFI_SPI_PROTOCOL                *mSpiProtocol;
+EFI_RNG_PROTOCOL                *mRngPtorocol;
 EFI_HASH2_PROTOCOL              *mHash2Protocol;
 EFI_SERVICE_BINDING_PROTOCOL    *mHash2ServiceBindingProtocol;
 
