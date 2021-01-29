@@ -1665,9 +1665,16 @@ MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteSmmDxe.inf
 #
 # UEFI URD Application
 #
-MdeModulePkg/Application/PrototypeApp/PrototypeApp.inf
 SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
-
+SecurityPkg/RandomNumberGenerator/RngDxe/RngDxe.inf {
+    <LibraryClasses>
+        RngLib|MdePkg/Library/BaseRngLib/BaseRngLib.inf
+}
+MdeModulePkg/Application/PrototypeApp/PrototypeApp.inf {
+    <LibraryClasses>
+        RngLib|MdePkg/Library/BaseRngLib/BaseRngLib.inf
+}
+ 
 [BuildOptions]
 #
 # Define Build Options both for EDK and EDKII drivers.

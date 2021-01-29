@@ -715,6 +715,7 @@ FILE FREEFORM = 878AC2CC-5343-46F2-B563-51F89DAF56BA {
 # Custom App
 #
 INF SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
+INF SecurityPkg/RandomNumberGenerator/RngDxe/RngDxe.inf
 
 #
 # Network Modules
