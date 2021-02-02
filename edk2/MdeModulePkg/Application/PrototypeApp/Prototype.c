@@ -114,6 +114,7 @@ UefiMain (
         {0xE3, 0x62, 0x61, 0x5B, 0x13, 0x19, 0xBB, 0xB2, 0x5B, 0x0B, 0x71, 0xC2, 0xC2, 0xEE, 0xC2, 0xD4, 0xD8, 0x63, 0x71, 0xA4, 0x98, 0x0B, 0x70, 0x76, 0xC2, 0x8D, 0x91, 0xAF, 0xD3, 0x11, 0x4F, 0x0A} };
     
     // Data transfer
+    UINT8 AuthTx_Data       = -1;
     UINT8 AuthRx_Data[32]   = { 0, };
     CHAR8 Hello_Data[16]    = "1234567890ABCDEF";
     CHAR8 Nonce_Data[33]    = { 0, };
@@ -122,7 +123,8 @@ UefiMain (
     UINT8 Verify_Data[100]  = { 0, };
     CHAR8 BD_Data[16]     = "FEDCBA0987654321";
 
-    UINTN AuthRx_len      = 32;
+    UINTN AuthTx_len    = 1;
+    UINTN AuthRx_len    = 32;
     UINTN Hello_len     = 16;
     UINTN Nonce_len     = 32;
     UINTN Hash_len      = 32;
@@ -328,21 +330,23 @@ UefiMain (
                 // Send Authentication code
                 //
                 Status = mRngProtocol->GetRNG (
-                        mRngPtorocol,
-                        &gEfiRngAlgorithmSp80090Hash256Guid,
+                        mRngProtocol,
+                        &gEfiRngAlgorithmSp80090Ctr256Guid,
                         1,
                         &RNG
                         );
-                for(Index = 0; Index < 32; Index++) {
+                //Print(L"Getting RNG Status: %r\n", Status);
+                /*for(Index = 0; Index < 32; Index++) {
                     AuthRx_Data[Index] = RNG % 32;
-                }
+                }*/
+                AuthTx_Data = (RNG % 32);
                 
-                Print(L"RNG number is %d, and its remainder by dividing 32 is %d\n", RNG, (RNG % 32));
+                //Print(L"RNG number is %d, and its remainder by dividing 32 is %d\n", RNG, (RNG % 32));
                 Status = UsbProtocol->UsbBulkTransfer (
                         UsbProtocol,
                         OutEndpointAddr,
-                        AuthRx_Data,
-                        &AuthRx_len,
+                        &AuthTx_Data,
+                        &AuthTx_len,
                         0,
                         &USB_Status
                         );
@@ -366,6 +370,17 @@ UefiMain (
                 //
                 // Check validity
                 //
+                Print(L"Host Auth: ");
+                for(Index = 0; Index < 32; Index++) {
+                    Print(L"%02x ", Auth_Data[AuthTx_Data][Index]);                
+                }
+                Print(L"\n");
+                Print(L"URD Auth: ");
+                for(Index = 0; Index < 32; Index++) {
+                    Print(L"%02x ", AuthRx_Data[Index]);
+                }
+                Print(L"\n");
+                
                 for(Index = 0; Index < 32; Index++) {
                     if(AuthRx_Data[Index] != Auth_Data[(RNG % 32)][Index]) {
                         Print(L"\nURD is not valid. System will be shut down.\n\n");
@@ -394,7 +409,7 @@ UefiMain (
                         0,
                         &USB_Status
                         );
-                /*
+                
                    Print(L"Send hello signal, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
                    Print(L"signal length=%d\n", Hello_len);
                    Print(L"signal=");
@@ -402,7 +417,7 @@ UefiMain (
                    Print(L"%02x ", Hello_Data[Index]);
                    }
                    Print(L"\n");
-                 */
+                 
 
                 //
                 // Receive Nonce
@@ -422,14 +437,14 @@ UefiMain (
                         Nonce_len = 32;
                 }
                 Print(L"Receive nonce value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
-                /*
+                
                    Print(L"Nonce length=%d\n", Nonce_len);
                    Print(L"Nonce=");
                    for(Index=0;Index<Nonce_len;Index++) {
                    Print(L"%02x ", Nonce_Data[Index]);
                    }
                    Print(L"\n");
-                 */
+                 
 
                 // Hash Computation
                 Index = 5308416;

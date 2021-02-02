@@ -81,6 +81,11 @@
 [Guids]
   gEfiHashAlgorithmSha256Guid
   gEfiRngAlgorithmSp80090Hash256Guid
+  gEfiRngAlgorithmSp80090Hmac256Guid
+  gEfiRngAlgorithmSp80090Ctr256Guid
+  gEfiRngAlgorithmX9313DesGuid
+  gEfiRngAlgorithmX931AesGuid
+  gEfiRngAlgorithmRaw
 
 [FeaturePcd]
 #  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintEnable   ## CONSUMES
