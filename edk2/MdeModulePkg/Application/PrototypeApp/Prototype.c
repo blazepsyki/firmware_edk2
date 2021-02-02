@@ -1,36 +1,9 @@
 /** @file
   This UEFI application is to check firmware integrity based on URD.
-
  **/
-
-
 
 #include "FirmwareUpdate.h"
 
-//
-// MinnowMax Flash Layout
-//
-// Start (hex)	End (hex)	Length (hex)	Area Name
-// -----------	---------	------------	---------
-// 00000000	    007FFFFF	00800000	Flash Image
-//
-// 00000000	    00000FFF	00001000	Descriptor Region
-// 00001000	    003FFFFF	003FF000	TXE Region
-// 00500000	    007FFFFF	00400000	BIOS Region
-//
-
-
-/**
-  The user Entry Point for Application. The user code starts with this function
-  as the real entry point for the application.
-
-  @param[in] ImageHandle    The firmware allocated handle for the EFI image.  
-  @param[in] SystemTable    A pointer to the EFI System Table.
-
-  @retval EFI_SUCCESS       The entry point is executed successfully.
-  @retval other             Some error occurs when executing this entry point.
-
- **/
 EFI_STATUS
     EFIAPI
 UefiMain (
@@ -75,7 +48,6 @@ UefiMain (
     // USB Data Structures
     EFI_USB_IO_PROTOCOL             *UsbProtocol;
     EFI_USB_DEVICE_DESCRIPTOR       DeviceDesc;
-    //EFI_USB_CONFIG_DESCRIPTOR       ConfigDesc;
     EFI_USB_INTERFACE_DESCRIPTOR    IntfDesc;
     EFI_USB_ENDPOINT_DESCRIPTOR     EndpDesc;
 
@@ -147,10 +119,12 @@ UefiMain (
     BOOLEAN               ResetRequired;
     BOOLEAN               FlashError;
 
-    // Device and Boot Path
+    // Device Path
     CONST CHAR16 HashDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
     CONST CHAR16 RNGDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/RngDxe.efi";
-    CONST CHAR16 BootPath_Succ[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
+
+    // Boot Path (Fix it!)
+    CONST CHAR16 BootPath_Succ[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/grupX64.efi";
     CONST CHAR16 BootPath_Fail[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/grupX64.efi";
 
     // Hash variables
@@ -181,20 +155,6 @@ UefiMain (
             (VOID **)&mSpiProtocol
             );
 
-    //Print(L"Load SPI Protocol Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
-
-    // Locate Shell protocol TODO: fix it
-    Status = gBS->LocateProtocol (
-            &gEfiShellProtocolGuid,
-            NULL,
-            (VOID **) &EfiShellProtocol
-            );
-    //Print(L"Load Shell Protocol Status: %r\n", Status);
-    //if (EFI_ERROR (Status))
-    //    return Status;
- 
     // Load and start Hash Driver from USB 
     Status = gBS->LoadImage (
             FALSE,
@@ -203,17 +163,11 @@ UefiMain (
             NULL,
             0,
             &Hash2SBHandle);
-    //Print(L"Load Hash driver Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
     
     Status = gBS->StartImage (
             Hash2SBHandle,
             0,
             NULL);
-    //Print(L"Start Hash driver Status: %r\n", Status);  
-    if (EFI_ERROR (Status))
-        return Status;
 
     // Locate Hash Service Binding protocol
     Status = gBS->LocateProtocol (
@@ -221,15 +175,9 @@ UefiMain (
             NULL,
             (VOID **)&mHash2ServiceBindingProtocol
             );
-    //Print(L"Hash Service Binding Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
 
     // Create a ChildHandle with the Hash2 Protocol
     Status = mHash2ServiceBindingProtocol->CreateChild (mHash2ServiceBindingProtocol, &Hash2ChildHandle);
-    //Print(L"Child Handle by Hash Service Binding Protocol Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
         
     // Retrieve the Hash2Protocol from Hash2ChildHandle
     Status = gBS->OpenProtocol ( 
@@ -240,9 +188,6 @@ UefiMain (
             Hash2ControllerHandle,
             EFI_OPEN_PROTOCOL_GET_PROTOCOL
             );
-    //Print(L"Hash Protocol Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
 
     // Locate USB protocol
     Status = gBS->LocateHandleBuffer (
@@ -252,8 +197,6 @@ UefiMain (
             &UsbHandleCount,
             &UsbHandleBuffer
             );
-    if (EFI_ERROR (Status))
-        return Status;
 
     // Load and start RNG Driver from USB 
     Status = gBS->LoadImage (
@@ -263,17 +206,11 @@ UefiMain (
             NULL,
             0,
             &RNGHandle);
-    //Print(L"Load RNG driver Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
     
     Status = gBS->StartImage (
             RNGHandle,
             0,
             NULL);
-    //Print(L"Start Hash driver Status: %r\n", Status);  
-    if (EFI_ERROR (Status))
-        return Status;
 
     // Locate RNG protocol
     Status = gBS->LocateProtocol (
@@ -281,34 +218,22 @@ UefiMain (
             NULL,
             (VOID **) &mRngProtocol
             );
-    //Print(L"RNG Protocol Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
 
     //
     // Make connection with URD
     //
-    Print(L"Connected USB Device: %d\n", UsbHandleCount);
     for(UsbHandleIndex=0; UsbHandleIndex < UsbHandleCount; UsbHandleIndex++) {
         Status = gBS->HandleProtocol (
                 UsbHandleBuffer[UsbHandleIndex],
                 &gEfiUsbIoProtocolGuid,
                 (VOID **) &UsbProtocol
                 );
-        //Print(L"Opening Device Handle, Status=%r\n", Status);
 
         Status = UsbProtocol->UsbGetDeviceDescriptor (
                 UsbProtocol,
                 &DeviceDesc
                 );
-        //Print(L"Retrieving Device Descriptor, Status= %r\n", Status);
-        Print(L"IdVendor=0x%04x, IdProduct=0x%04x\n", DeviceDesc.IdVendor, DeviceDesc.IdProduct);
         if ((URD_IdVendor == DeviceDesc.IdVendor) && (URD_IdProduct == DeviceDesc.IdProduct)) {
-            /*Status = UsbProtocol->UsbGetConfigDescriptor (
-              UsbProtocol,
-              &ConfigDesc
-              );
-              Print(L"NumInterfaces= %d\n", ConfigDesc.NumInterface);*/
             Status = UsbProtocol->UsbGetInterfaceDescriptor (
                     UsbProtocol,
                     &IntfDesc
@@ -335,13 +260,7 @@ UefiMain (
                         1,
                         &RNG
                         );
-                //Print(L"Getting RNG Status: %r\n", Status);
-                /*for(Index = 0; Index < 32; Index++) {
-                    AuthRx_Data[Index] = RNG % 32;
-                }*/
                 AuthTx_Data = (RNG % 32);
-                
-                //Print(L"RNG number is %d, and its remainder by dividing 32 is %d\n", RNG, (RNG % 32));
                 Status = UsbProtocol->UsbBulkTransfer (
                         UsbProtocol,
                         OutEndpointAddr,
@@ -368,19 +287,9 @@ UefiMain (
                         AuthRx_len = 32;
                 }
                 //
+                        Print(L".");
                 // Check validity
                 //
-                Print(L"Host Auth: ");
-                for(Index = 0; Index < 32; Index++) {
-                    Print(L"%02x ", Auth_Data[AuthTx_Data][Index]);                
-                }
-                Print(L"\n");
-                Print(L"URD Auth: ");
-                for(Index = 0; Index < 32; Index++) {
-                    Print(L"%02x ", AuthRx_Data[Index]);
-                }
-                Print(L"\n");
-                
                 for(Index = 0; Index < 32; Index++) {
                     if(AuthRx_Data[Index] != Auth_Data[(RNG % 32)][Index]) {
                         Print(L"\nURD is not valid. System will be shut down.\n\n");
@@ -409,16 +318,6 @@ UefiMain (
                         0,
                         &USB_Status
                         );
-                
-                   Print(L"Send hello signal, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
-                   Print(L"signal length=%d\n", Hello_len);
-                   Print(L"signal=");
-                   for(Index=0;Index<Hello_len;Index++) {
-                   Print(L"%02x ", Hello_Data[Index]);
-                   }
-                   Print(L"\n");
-                 
-
                 //
                 // Receive Nonce
                 //
@@ -436,49 +335,21 @@ UefiMain (
                     else
                         Nonce_len = 32;
                 }
-                Print(L"Receive nonce value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
-                
-                   Print(L"Nonce length=%d\n", Nonce_len);
-                   Print(L"Nonce=");
-                   for(Index=0;Index<Nonce_len;Index++) {
-                   Print(L"%02x ", Nonce_Data[Index]);
-                   }
-                   Print(L"\n");
-                 
 
+                //
                 // Hash Computation
+                //
                 Index = 5308416;
                 Address = PcdGet32 (PcdFlashChipBase) + Index;
 
                 Status = mHash2Protocol->HashInit (
                         mHash2Protocol,
                         &gEfiHashAlgorithmSha256Guid);
-                //Print(L"Hash Initialize status: %r\n", Status);
-                if (EFI_ERROR (Status))
-                    return Status;
-                
-                // Hash test code for nonce only
-                /*Status = mHash2Protocol->Hash (
-                        mHash2Protocol,
-                        &gEfiHashAlgorithmSha256Guid,
-                        (CONST UINT8 *) Nonce_Data,
-                        32,
-                        &HashResult);
-                Print(L"Hash, with only Nonce, value: ");
-                for(Index = 0; Index < 32; Index++) {
-                    Print(L"%02x ", HashResult.Sha256Hash[Index]);
-                }
-                Print(L"\n");
-                */
                 
                 Status = mHash2Protocol->HashUpdate (
                         mHash2Protocol,
                         (CONST UINT8 *) Nonce_Data,
                         32);
-                Print(L"Hash Update first with nonce, Status: %r\n", Status);
- 
-                if (EFI_ERROR (Status))
-                    return Status;
 
                 OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
                 while(Index < (1<<23)) {
@@ -486,13 +357,8 @@ UefiMain (
                             (UINTN) Address,
                             &ReadByte_Num, 
                             ReadBuffer);
-//                    if(EFI_ERROR(Status)) {
-//                        Print(L"SpiError: %r, %d, %d\r", Status, Address, &ReadByte_Num);
-//                        continue;
-//                    }
                     if((EFI_ERROR(Status)) || (ReadByte_Num != 4096)) {
                         ReadByte_Num = 4096;
-//                        Print(L"SpiError: %r, %d, %d\n", Status, Address, &ReadByte_Num);
                         continue;
                     }
                     Status = mHash2Protocol->HashUpdate (
@@ -500,17 +366,8 @@ UefiMain (
                             ReadBuffer,
                             ReadByte_Num);
                     if(EFI_ERROR(Status)) {
-//                        Print(L"HashError: %r, %d, %d\n", Status, Address, &ReadByte_Num);
                         continue;
                     }
-//                    Print(L"Read SPI and Hash update: %r, Readbyte: %d, Index: %d\n", Status, ReadByte_Num, (Index>>12));
-                    // Test code: reading flash verification
-                    /*Print(L"Read result=");
-                    for(Index2 = 0; Index2 < ReadByte_Num; Index2++) {
-                        Print(L"%02x ", ReadBuffer[Index2]);
-                    }
-                    Print(L"\n");*/
-//                    Print (L".");
                     Address += 1<<12;
                     Index += 1<<12;
                 }
@@ -520,20 +377,12 @@ UefiMain (
                         mHash2Protocol,
                         &HashResult
                         );
-                Print(L"\rHash Computation complete, Status: %r\n", Status);
-                if (EFI_ERROR (Status))
-                    return Status;
-                Print(L"Hash value: %a\n", HashResult.Sha256Hash);
-                Print(L"Hash value: ");
-                for(Index = 0; Index < 32; Index++) {
-                    Print(L"%02x ", HashResult.Sha256Hash[Index]);
-                }
-                Print(L"\n");
 
                 // Copy Hash value to variable for Tx
                 for(Index = 0; Index < 32; Index ++) {
                     Hash_Data[Index] = (CHAR8) HashResult.Sha256Hash[Index];
                 }
+                
                 //
                 // Send hash value
                 //
@@ -545,16 +394,6 @@ UefiMain (
                         0,
                         &USB_Status
                         );
-                Print(L"Send hash value, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
-                /*
-                   Print(L"Hash length=%d\n", Hash_len);
-                   Print(L"Hash=");
-                   for(Index=0;Index<Hash_len;Index++) {
-                   Print(L"%02x ", Hash_Data[Index]);
-                   }
-                   Print(L"\n");
-                   Print(L"Hash value = %a\n", Hash_Data);
-                 */
 
                 //
                 // Receive Verify data
@@ -573,21 +412,12 @@ UefiMain (
                     else
                         Verify_len = 40;
                 }
-                Print(L"Receive verify data value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
-                /*
-                   Print(L"verify data length=%d\n", Verify_len);
-                   Print(L"verify data=");
-                   for(Index=0;Index<Verify_len;Index++) {
-                   Print(L"%02x", Verify_Data[Index]);
-                   }
-                   Print(L"\n");
-                 */
 
                 //
                 // Check Verify data
                 //
                 if(Verify_Data[15] == '1') {
-                    Print(L"this device is secure.\n");
+                    Print(L"Device is secure.\n");
                     Print(L"Firmware integrity validation completed. Boot process will be proceed.\n");
                     goto Done;
                 }
@@ -609,7 +439,6 @@ UefiMain (
                     }
 
                     // Bulk transfer and write data
-                    Print(L"Receive firmware, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
                     while(Index < 8388608) {
                         Status = UsbProtocol->UsbBulkTransfer (
                                 UsbProtocol,
@@ -619,14 +448,6 @@ UefiMain (
                                 0,
                                 &USB_Status
                                 );
-                        //Print(L"%r\n", USB_Status);
-                        //Print(L"Firmware length=%d, ", FW_len);
-                        //Print(L"Index=%d\n", Index);
-                        //Print(L"Firmware contents=%a", FW_Data);
-                        //for(Index2=0;Index2<VD_len;Index2++) {
-                        //    Print(L"%08X ", FW_Data[Index2]);
-                        //}
-                        //Print(L"\n");
                         if(FW_len > 1000) {
                             // firmware write
                             Buffer = FW_Data;
@@ -644,9 +465,8 @@ UefiMain (
                         }
                         FW_len = 4096;
                         FW_Data[0] = '\0';
-                        Print(L".");
                     }
-                    Print(L"\n");
+                    Print(L"Recovery complete.\n");
                     gBS->RestoreTPL (OldTpl);
                     goto Done;
                 }
@@ -673,16 +493,9 @@ UefiMain (
     gBS->Stall(100000);
 
     gRT-> ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
-    /*
-       EfiShellProtocol->Execute (&ImageHandle,
-       L"reset -s",
-       NULL,
-       &Status);*/
     return EFI_NOT_READY;
 
-
 Done:
-
     Print(L"\nFirmware checking is complete.\n\n");
     if(ResetRequired && !FlashError) {
         Print(L"Reboot will be proceeded due to flash update.");
@@ -711,7 +524,6 @@ Done:
             0,
             &USB_Status
             );
-    Print(L"Send boot decision message, Endpoint=0x%02x, Status:%r\n", OutEndpointAddr, Status);
 
     //
     // Receive decision data
@@ -730,15 +542,6 @@ Done:
         else
             BD_len = 48;
     }
-    Print(L"Receive decision data value, Endpoint=0x%02x, Status:%r\n", InEndpointAddr, Status);
-
-    Print(L"Decision data data length=%d\n", BD_len);
-    Print(L"Decision data=");
-    for(Index=0;Index<BD_len;Index++) {
-        Print(L"%02x", BD_Data[Index]);
-    }
-    Print(L"\n");
-
     FreePool (UsbHandleBuffer);
 
     //
@@ -752,9 +555,6 @@ Done:
                 NULL,
                 0,
                 &BootLoaderHandle);
-        Print(L"Load Normal bootloader Status: %r\n", Status);
-        if (EFI_ERROR (Status))
-            return Status;
     }
     else if(BD_Data[10] == 'X') {
         Status = gBS->LoadImage (
@@ -764,10 +564,6 @@ Done:
                 NULL,
                 0,
                 &BootLoaderHandle);
-        Print(L"Load Emergency bootloader Status: %r\n", Status);
-        if (EFI_ERROR (Status))
-            return Status;
-
     }
     else
     {
