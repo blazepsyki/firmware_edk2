@@ -48,7 +48,6 @@
   IA32FamilyCpuPkg/IA32FamilyCpuPkg.dec
   Vlv2TbltDevicePkg/PlatformPkg.dec
   Vlv2DeviceRefCodePkg/Vlv2DeviceRefCodePkg.dec
-#SecurityPkg/SecurityPkg.dec
   ShellPkg/ShellPkg.dec
 
 [LibraryClasses]
@@ -80,29 +79,12 @@
 
 [Guids]
   gEfiHashAlgorithmSha256Guid
-  gEfiRngAlgorithmSp80090Hash256Guid
-  gEfiRngAlgorithmSp80090Hmac256Guid
   gEfiRngAlgorithmSp80090Ctr256Guid
-  gEfiRngAlgorithmX9313DesGuid
-  gEfiRngAlgorithmX931AesGuid
-  gEfiRngAlgorithmRaw
-
-[FeaturePcd]
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintEnable   ## CONSUMES
 
 [Pcd]
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintString   ## SOMETIMES_CONSUMES
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdHelloWorldPrintTimes    ## SOMETIMES_CONSUMES
   gEfiMdePkgTokenSpaceGuid.PcdUefiLibMaxPrintBufferSize   ## CONSUMES
 
 [FixedPcd]
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase
-
   gPlatformModuleTokenSpaceGuid.PcdFlashChipBase
   gPlatformModuleTokenSpaceGuid.PcdFlashChipSize
   gPlatformModuleTokenSpaceGuid.PcdFlashDescriptorBase
@@ -115,6 +97,3 @@
 [BuildOptions]
   MSFT:*_*_X64_CC_FLAGS       = /Od 
   INTEL:*_*_X64_CC_FLAGS       = /Od 
-
-# [UserExtensions.TianoCore."ExtraFiles"]
-#   HelloWorldExtra.uni
