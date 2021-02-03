@@ -667,7 +667,16 @@ FILE FREEFORM = 878AC2CC-5343-46F2-B563-51F89DAF56BA {
 #
 # UEFI URD Application
 #
-INF MdeModulePkg/Application/PrototypeApp/PrototypeApp.inf
+FILE DRIVER = B981A835-6EE8-4f4c-AE0B-210AA0BFBF01 {
+    SECTION PE32 = SecurityPkg/Hash2DxeCrypto/$(EDK_DXE_ARCHITECTURE)/Hash2DxeCrypto.efi
+}
+FILE DRIVER = 63E3BDCF-2AC7-4ac0-9B92-03A7541422FF {
+    SECTION PE32 = SecurityPkg/RandomNumberGenerator/RngDxe/$(EDK_DXE_ARCHITECTURE)/RngDxe.efi
+}
+
+#INF  SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
+#INF  SecurityPkg/RandomNumberGenerator/RngDxe/RngDxe.inf
+INF  MdeModulePkg/Application/PrototypeApp/PrototypeApp.inf
 
 #
 # Network Modules
