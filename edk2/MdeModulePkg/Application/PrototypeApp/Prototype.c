@@ -51,11 +51,11 @@ UefiMain (
 
     EFI_HANDLE  BootLoaderHandle;
 
-    EFI_HANDLE  *Hash2ControllerHandle;
-    EFI_HANDLE  Hash2SBHandle           = NULL;
+    //EFI_HANDLE  *Hash2ControllerHandle;
+    //EFI_HANDLE  Hash2SBHandle           = NULL;
     EFI_HANDLE  Hash2ChildHandle        = NULL;
 
-    EFI_HANDLE RNGHandle                = NULL;
+    //EFI_HANDLE RNGHandle                = NULL;
 
     // URD Specification
     UINT16      URD_IdVendor = 1317;
@@ -67,7 +67,7 @@ UefiMain (
     UINT8       OutEndpointAddr = 0;   
 
     // Shell Data Structure
-    EFI_SHELL_PROTOCOL  *EfiShellProtocol;
+    //EFI_SHELL_PROTOCOL  *EfiShellProtocol;
 
     // RNG Data Structure
     EFI_RNG_PROTOCOL *mRngProtocol;
@@ -148,8 +148,8 @@ UefiMain (
     BOOLEAN               FlashError;
 
     // Device and Boot Path
-    CONST CHAR16 HashDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
-    CONST CHAR16 RNGDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/RngDxe.efi";
+    //CONST CHAR16 HashDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
+    //CONST CHAR16 RNGDriverPath[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/RngDxe.efi";
     CONST CHAR16 BootPath_Succ[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/Hash2DxeCrypto.efi";
     CONST CHAR16 BootPath_Fail[] = L"PciRoot(0x0)/Pci(0x14,0x0)/USB(0x0,0x0)/HD(1,MBR,0xA82DEFD5,0x800,0x3A7F800)/grupX64.efi";
 
@@ -181,39 +181,39 @@ UefiMain (
             (VOID **)&mSpiProtocol
             );
 
-    //Print(L"Load SPI Protocol Status: %r\n", Status);
+    /*Print(L"Load SPI Protocol Status: %r\n", Status);
     if (EFI_ERROR (Status))
-        return Status;
+        return Status;*/
 
     // Locate Shell protocol TODO: fix it
-    Status = gBS->LocateProtocol (
+    /*Status = gBS->LocateProtocol (
             &gEfiShellProtocolGuid,
             NULL,
             (VOID **) &EfiShellProtocol
             );
-    //Print(L"Load Shell Protocol Status: %r\n", Status);
-    //if (EFI_ERROR (Status))
-    //    return Status;
+    Print(L"Load Shell Protocol Status: %r\n", Status);
+    if (EFI_ERROR (Status))
+        return Status;*/
  
     // Load and start Hash Driver from USB 
-    Status = gBS->LoadImage (
+    /*Status = gBS->LoadImage (
             FALSE,
             ImageHandle,
             ConvertTextToDevicePath (HashDriverPath),
             NULL,
             0,
             &Hash2SBHandle);
-    //Print(L"Load Hash driver Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"Load Hash driver Status: %r\n", Status);
+    //if (EFI_ERROR (Status))
+    //    return Status;
     
     Status = gBS->StartImage (
             Hash2SBHandle,
             0,
             NULL);
-    //Print(L"Start Hash driver Status: %r\n", Status);  
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"Start Hash driver Status: %r\n", Status);  
+    //if (EFI_ERROR (Status))
+    //    return Status;*/
 
     // Locate Hash Service Binding protocol
     Status = gBS->LocateProtocol (
@@ -221,28 +221,33 @@ UefiMain (
             NULL,
             (VOID **)&mHash2ServiceBindingProtocol
             );
-    //Print(L"Hash Service Binding Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"Hash Service Binding Status: %r\n", Status);
+    //if (EFI_ERROR (Status))
+    //    return Status;
 
     // Create a ChildHandle with the Hash2 Protocol
     Status = mHash2ServiceBindingProtocol->CreateChild (mHash2ServiceBindingProtocol, &Hash2ChildHandle);
-    //Print(L"Child Handle by Hash Service Binding Protocol Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"Child Handle by Hash Service Binding Protocol Status: %r\n", Status);
+    //if (EFI_ERROR (Status))
+    //    return Status;
         
     // Retrieve the Hash2Protocol from Hash2ChildHandle
-    Status = gBS->OpenProtocol ( 
+    /*Status = gBS->OpenProtocol ( 
             Hash2ChildHandle,
             &gEfiHash2ProtocolGuid,
             (VOID **)&mHash2Protocol,
             Hash2SBHandle,
             Hash2ControllerHandle,
             EFI_OPEN_PROTOCOL_GET_PROTOCOL
+            );*/
+    Status = gBS->HandleProtocol (
+            Hash2ChildHandle,
+            &gEfiHash2ProtocolGuid,
+            (VOID **)&mHash2Protocol
             );
-    //Print(L"Hash Protocol Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"Hash Protocol Status: %r\n", Status);
+    //if (EFI_ERROR (Status))
+    //    return Status;
 
     // Locate USB protocol
     Status = gBS->LocateHandleBuffer (
@@ -252,28 +257,29 @@ UefiMain (
             &UsbHandleCount,
             &UsbHandleBuffer
             );
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"USB Protocol Status: %r\n", Status);
+    //if (EFI_ERROR (Status))
+    //    return Status;
 
     // Load and start RNG Driver from USB 
-    Status = gBS->LoadImage (
+    /*Status = gBS->LoadImage (
             FALSE,
             ImageHandle,
             ConvertTextToDevicePath (RNGDriverPath),
             NULL,
             0,
             &RNGHandle);
-    //Print(L"Load RNG driver Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"Load RNG driver Status: %r\n", Status);
+    //if (EFI_ERROR (Status))
+    //    return Status;
     
     Status = gBS->StartImage (
             RNGHandle,
             0,
             NULL);
-    //Print(L"Start Hash driver Status: %r\n", Status);  
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"Start RNG driver Status: %r\n", Status);  
+    //if (EFI_ERROR (Status))
+    //    return Status;*/
 
     // Locate RNG protocol
     Status = gBS->LocateProtocol (
@@ -281,9 +287,9 @@ UefiMain (
             NULL,
             (VOID **) &mRngProtocol
             );
-    //Print(L"RNG Protocol Status: %r\n", Status);
-    if (EFI_ERROR (Status))
-        return Status;
+    Print(L"RNG Protocol Status: %r\n", Status);
+    //if (EFI_ERROR (Status))
+    //    return Status;
 
     //
     // Make connection with URD
